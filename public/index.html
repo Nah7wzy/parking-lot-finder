@@ -25,10 +25,127 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>React App</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.22/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.22/"></script>
+
+    <script>
+      require(["esri/config","esri/WebMap",
+      "esri/views/MapView",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Legend",
+      "esri/Graphic",
+      "esri/rest/route",
+      "esri/rest/support/RouteParameters",
+      "esri/rest/support/FeatureSet",
+      "esri/widgets/Locate",
+      "esri/widgets/Search",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Editor"], function (esriConfig, WebMap, MapView, ScaleBar, Legend, Graphic, route, RouteParameters, FeatureSet,
+            Locate, Search, FeatureLayer, Editor) {
+
+        esriConfig.apiKey = "AAPK56e894ec66ff44f98ac3628433924bc2SBJbb-PoCB1Ye7prP9hpJB9fFVxlEKCsgFsLtHF69xGcvNKOkYksi_GFZRPB5CnG";
+        
+
+  const webmap = new WebMap({
+        portalItem: {
+          id: "e76d9a481715465b8fa3b923aa38fa1e"
+        },
+      });
+
+
+        const view = new MapView({
+          map: webmap,
+          
+          container: "viewDiv" // Div element
+        });
+
+        const search = new Search({  //Add Search widget
+      view: view
+    });
+    view.ui.add(search, "top-right");
+
+    const editor = new Editor({
+        view: view
+      });
+      // Add widget to the view
+      view.ui.add(editor, "top-right");
+
+        const locate = new Locate({
+          view: view,
+          useHeadingEnabled: false,
+          goToOverride: function(view, options) {
+            options.target.scale = 1800;
+            return view.goTo(options.target);
+          }
+        });
+        view.ui.add(locate, "bottom-right");
+
+      const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
+
+      view.on("click", function(event){
+        if (view.graphics.length === 0) {
+        addGraphic("origin", event.mapPoint);
+      } else if (view.graphics.length === 1) {
+        addGraphic("destination", event.mapPoint);
+
+        getRoute();
+      } else {
+        view.graphics.removeAll();
+        // addGraphic("origin",event.mapPoint);
+      }
+    });
+
+    function addGraphic(type, point) {
+      const graphic = new Graphic({
+        symbol: {
+          type: "simple-marker",
+          color: (type === "origin") ? "white" : "black",
+          size: "8px"
+        },
+        geometry: point
+      });
+      view.graphics.add(graphic);
+    }
+
+    function getRoute() {
+      const routeParams = new RouteParameters({
+        stops: new FeatureSet({
+          features: view.graphics.toArray()
+        }),
+
+      });
+      route.solve(routeUrl, routeParams)
+        .then(function(data) {
+          data.routeResults.forEach(function(result) {
+            result.route.symbol = {
+              type: "simple-line",
+              color: [5, 150, 255],
+              width: 3
+            };
+            view.graphics.add(result.route);
+          });
+
+        })
+    }
+
+      });
+    </script>
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="viewDiv"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
