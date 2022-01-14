@@ -73,7 +73,7 @@
 
         //Query with SQL
 
-        const parcelLayerSQL = ["Filter lots with ", "Availability = 'Yes'",  "Payment = '0'", "Payment < '7'", "Payment < '5'"];
+        const parcelLayerSQL = ["Filter lots with ", "Availability = 'Yes'", "Availability = 'No'",  "Payment = '0'", "Payment < '7'", "Payment < '5'"];
       let whereClause = parcelLayerSQL[0];
 
       const select = document.createElement("select","");
@@ -114,13 +114,16 @@ parcelLayer.queryFeatures(parcelQuery)
 
           console.log("Feature count: " + JSON.stringify(results.features[0].attributes.Owner))
           const select = document.createElement("table","tr","");
+          select.setAttribute("style", "background-color: white; border-bottom: 1px solid #ddd;")
           var x=["laksdjf", "sadfkd", "ksjfdsfsd"]
-          x.forEach(function(query){
-        let option = document.createElement("th");
-        option.innerHTML = query;
-        option.value = query;
+          for (let i = 0; i < results.features.length; i++) {
+            
+            let option = document.createElement("tr");
+        option.innerHTML = JSON.stringify(results.features[i].attributes.Owner);
+        option.value = JSON.stringify(results.features[i].attributes.Owner);
         select.appendChild(option);
-      });
+          }
+          
       view.ui.add(select, "bottom-left");
 
           displayResults(results);
