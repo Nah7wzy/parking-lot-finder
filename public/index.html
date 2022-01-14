@@ -40,6 +40,7 @@
     <script src="https://js.arcgis.com/4.22/"></script>
 
     <script>
+      const disp = document.getElementById("x");
       require(["esri/config","esri/WebMap",
       "esri/views/MapView",
       "esri/widgets/ScaleBar",
@@ -70,17 +71,112 @@
           container: "viewDiv" // Div element
         });
 
+        //Query with SQL
+
+        const parcelLayerSQL = ["Filter lots with ", "Availability = 'Yes'",  "Payment = '0'", "Payment < '7'", "Payment < '5'"];
+      let whereClause = parcelLayerSQL[0];
+
+      const select = document.createElement("select","");
+      select.setAttribute("class", "esri-widget esri-select");
+      select.setAttribute("style", "width: 200px; font-family: 'Avenir Next'; font-size: 1em");
+      parcelLayerSQL.forEach(function(query){
+        let option = document.createElement("option");
+        option.innerHTML = query;
+        option.value = query;
+        select.appendChild(option);
+      });
+      view.ui.add(select, "top-left");
+
+      
+
+      select.addEventListener('change', (event) => {
+        whereClause = event.target.value;
+        queryFeatureLayer(view.extent);
+      });
+
+      const parcelLayer = new FeatureLayer({
+        url: "https://services1.arcgis.com/PvGBnPkIpup547Em/arcgis/rest/services/parking_lots/FeatureServer/0",
+      });
+
+      function queryFeatureLayer(extent) {
+
+const parcelQuery = {
+ where: whereClause,  // Set by select element
+ spatialRelationship: "intersects", // Relationship operation to apply
+ geometry: extent, // Restricted to visible extent of the map
+ outFields: ["Owner", "Availability","Payment"], // Attributes to return
+ returnGeometry: true
+};
+
+parcelLayer.queryFeatures(parcelQuery)
+
+        .then((results) => {
+
+          console.log("Feature count: " + JSON.stringify(results.features[0].attributes.Owner))
+          const select = document.createElement("table","tr","");
+          var x=["laksdjf", "sadfkd", "ksjfdsfsd"]
+          x.forEach(function(query){
+        let option = document.createElement("th");
+        option.innerHTML = query;
+        option.value = query;
+        select.appendChild(option);
+      });
+      view.ui.add(select, "bottom-left");
+
+          displayResults(results);
+
+        }).catch((error) => {
+          console.log(error.error);
+        });
+}
+
+function displayResults(results) {
+        // Create a blue polygon
+        const symbol = {
+          type: "simple-fill",
+          color: [ 20, 130, 200, 0.5 ],
+          outline: {
+            color: "white",
+            width: .5
+          },
+        };
+
+        const popupTemplate = {
+          title: "Parcel {Owner}",
+          content: "Availability: {Availability} <br> Payment Per Hour: {Payment}"
+        };
+        results.features.map((feature) => {
+          feature.symbol = symbol;
+          feature.popupTemplate = popupTemplate;
+          return feature;
+        });
+     
+
+      
+        // Clear display
+        view.popup.close();
+        view.graphics.removeAll();
+        // Add features to graphics layer
+        view.graphics.addMany(results.features);
+      }
+
+////////////////////////////////////////////////////////
+
+      //Add Search Functionality
         const search = new Search({  //Add Search widget
       view: view
     });
     view.ui.add(search, "top-right");
 
+
+    //Add feature adding and editing
     const editor = new Editor({
         view: view
       });
-      // Add widget to the view
       view.ui.add(editor, "top-right");
 
+
+      //Display user location
         const locate = new Locate({
           view: view,
           useHeadingEnabled: false,
@@ -91,6 +187,8 @@
         });
         view.ui.add(locate, "bottom-right");
 
+
+        //Add displaying route function
       const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
 
       view.on("click", function(event){
@@ -138,7 +236,7 @@
 
         })
     }
-
+    
       });
     </script>
 
@@ -146,7 +244,9 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <div id="x"></div>
     <div id="viewDiv"></div>
+    
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
